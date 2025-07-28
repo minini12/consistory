@@ -50,14 +50,24 @@ def create_token_indices(prompts, batch_size, concept_token, tokenizer):
 
     return token_indices
 
-def create_latents(story_pipeline, seed, batch_size, same_latent, device, float_type):
+def create_latents(story_pipeline, seed, batch_size, same_latent, device, float_type, height, width):
     # if seed is int
     if isinstance(seed, int):
         g = torch.Generator('cuda').manual_seed(seed)
-        shape = (batch_size, story_pipeline.unet.config.in_channels, 128, 128)
+        shape = (
+            batch_size,
+            story_pipeline.unet.config.in_channels,
+            height // 8,
+            width // 8,
+        )
         latents = randn_tensor(shape, generator=g, device=device, dtype=float_type)
     elif isinstance(seed, list):
-        shape = (batch_size, story_pipeline.unet.config.in_channels, 128, 128)
+        shape = (
+            batch_size,
+            story_pipeline.unet.config.in_channels,
+            height // 8,
+            width // 8,
+        )
         latents = torch.empty(shape, device=device, dtype=float_type)
         for i, seed_i in enumerate(seed):
             g = torch.Generator('cuda').manual_seed(seed_i)
@@ -69,12 +79,22 @@ def create_latents(story_pipeline, seed, batch_size, same_latent, device, float_
 
     return latents, g
 
-def run_anchor_generation(story_pipeline, prompts, concept_token,
-                   seed=40, n_steps=50, mask_dropout=0.5,
-                   same_latent=False, share_queries=True,
-                   perform_sdsa=True, perform_injection=True,
-                   downscale_rate=4):
-    latent_resolutions = [32, 64]
+def run_anchor_generation(
+    story_pipeline,
+    prompts,
+    concept_token,
+    seed=40,
+    n_steps=50,
+    mask_dropout=0.5,
+    same_latent=False,
+    share_queries=True,
+    perform_sdsa=True,
+    perform_injection=True,
+    downscale_rate=4,
+    height=1024,
+    width=1024,
+):
+    latent_resolutions = [min(height, width) // 32, min(height, width) // 16]
 
     device = story_pipeline.device
     tokenizer = story_pipeline.tokenizer
@@ -87,13 +107,24 @@ def run_anchor_generation(story_pipeline, prompts, concept_token,
 
     default_attention_store_kwargs = {
         'token_indices': token_indices,
-        'mask_dropout': mask_dropout
+        'mask_dropout': mask_dropout,
+        'attn_res': (height // 32, width // 32),
+        'latent_resolutions': latent_resolutions,
     }
 
     default_extended_attn_kwargs = {'extend_kv_unet_parts': ['up']}
     query_store_kwargs={'t_range': [0,n_steps//10], 'strength_start': 0.9, 'strength_end': 0.81836735}
 
-    latents, g = create_latents(story_pipeline, seed, batch_size, same_latent, device, float_type)
+    latents, g = create_latents(
+        story_pipeline,
+        seed,
+        batch_size,
+        same_latent,
+        device,
+        float_type,
+        height,
+        width,
+    )
 
     anchor_cache_first_stage = AnchorCache()
     anchor_cache_second_stage = AnchorCache()
@@ -155,13 +186,24 @@ def run_anchor_generation(story_pipeline, prompts, concept_token,
     
     return out.images, img_all, anchor_cache_first_stage, anchor_cache_second_stage
 
-def run_extra_generation(story_pipeline, prompts, concept_token, 
-                         anchor_cache_first_stage, anchor_cache_second_stage,
-                         seed=40, n_steps=50, mask_dropout=0.5,
-                         same_latent=False, share_queries=True,
-                         perform_sdsa=True, perform_injection=True,
-                         downscale_rate=4):
-    latent_resolutions = [32, 64]
+def run_extra_generation(
+    story_pipeline,
+    prompts,
+    concept_token,
+    anchor_cache_first_stage,
+    anchor_cache_second_stage,
+    seed=40,
+    n_steps=50,
+    mask_dropout=0.5,
+    same_latent=False,
+    share_queries=True,
+    perform_sdsa=True,
+    perform_injection=True,
+    downscale_rate=4,
+    height=1024,
+    width=1024,
+):
+    latent_resolutions = [min(height, width) // 32, min(height, width) // 16]
 
     device = story_pipeline.device
     tokenizer = story_pipeline.tokenizer
@@ -174,7 +216,9 @@ def run_extra_generation(story_pipeline, prompts, concept_token,
 
     default_attention_store_kwargs = {
         'token_indices': token_indices,
-        'mask_dropout': mask_dropout
+        'mask_dropout': mask_dropout,
+        'attn_res': (height // 32, width // 32),
+        'latent_resolutions': latent_resolutions,
     }
 
     default_extended_attn_kwargs = {'extend_kv_unet_parts': ['up']}
@@ -184,7 +228,16 @@ def run_extra_generation(story_pipeline, prompts, concept_token,
     if isinstance(seed, list):
         seed = [seed[0], seed[0], *seed]
 
-    latents, g = create_latents(story_pipeline, seed, extra_batch_size, same_latent, device, float_type)
+    latents, g = create_latents(
+        story_pipeline,
+        seed,
+        extra_batch_size,
+        same_latent,
+        device,
+        float_type,
+        height,
+        width,
+    )
     latents = latents[2:]
 
     anchor_cache_first_stage.set_mode_inject()
