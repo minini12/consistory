@@ -18,7 +18,7 @@ else:
     xformers = None
 
 class FeatureInjector:
-    def __init__(self, nn_map, nn_distances, attn_masks, inject_range_alpha=[(10,20,0.8)], swap_strategy='min', dist_thr='dynamic', inject_unet_parts=['up']):
+    def __init__(self, nn_map, nn_distances, attn_masks, inject_range_alpha=[(10,20,0.8)], swap_strategy='min', dist_thr='dynamic', inject_unet_parts=['up'], latent_size=128):
         self.nn_map = nn_map
         self.nn_distances = nn_distances
         self.attn_masks = attn_masks
@@ -27,7 +27,7 @@ class FeatureInjector:
         self.swap_strategy = swap_strategy # 'min / 'mean' / 'first'
         self.dist_thr = dist_thr
         self.inject_unet_parts = inject_unet_parts
-        self.inject_res = [64]
+        self.inject_res = [latent_size // 2]
 
     def inject_outputs(self, output, curr_iter, output_res, extended_mapping, place_in_unet, anchors_cache=None):
         curr_unet_part = place_in_unet.split('_')[0]

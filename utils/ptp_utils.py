@@ -116,7 +116,8 @@ class AttentionStore:
         torch.manual_seed(0) # For dropout mask reproducibility
 
         self.curr_iter = 0
-        self.ALL_RES = [32, 64]
+        base = self.attn_res[0]
+        self.ALL_RES = [base, base * 2]
         self.step_store = defaultdict(list)
         self.attn_masks = {res: None for res in self.ALL_RES}
         self.last_mask = {res: None for res in self.ALL_RES}
