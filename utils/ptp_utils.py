@@ -106,7 +106,7 @@ class AttentionStore:
         Initialize an empty AttentionStore :param step_index: used to visualize only a specific step in the diffusion
         process
         """
-        self.attn_res = attention_store_kwargs.get('attn_res', (32,32))
+        self.attn_res = attention_store_kwargs.get("attn_res", (32, 32))
         self.token_indices = attention_store_kwargs['token_indices']
         bsz = self.token_indices.size(1)
         self.mask_background_query = attention_store_kwargs.get('mask_background_query', False)
@@ -116,7 +116,7 @@ class AttentionStore:
         torch.manual_seed(0) # For dropout mask reproducibility
 
         self.curr_iter = 0
-        self.ALL_RES = [32, 64]
+        self.ALL_RES = attention_store_kwargs.get("latent_resolutions", [32, 64])
         self.step_store = defaultdict(list)
         self.attn_masks = {res: None for res in self.ALL_RES}
         self.last_mask = {res: None for res in self.ALL_RES}

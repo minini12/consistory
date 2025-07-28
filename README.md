@@ -52,6 +52,7 @@ python consistory_CLI.py --subject "a cute dog" --concept_token "dog" --settings
 - **`--settings`**: A list of settings or backgrounds for generating different scenarios, e.g., `"sitting in the beach"` or `"in the circus"`.
 - **`--cache_cpu_offloading`**: Boolean to indicate whether to offload the anchors cache to the CPU. This reduces memory usage but may slow down generation.
 - **`--out_dir`**: The output directory where generated images will be saved.
+- **`--height`** / **`--width`**: Desired output resolution in pixels. Defaults to `1024`.
 
 #### Example commands
 1. **Batch generation:**
